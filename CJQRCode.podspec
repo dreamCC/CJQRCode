@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.author       = { "dreamCC" => "568644031@qq.com" }
   s.platform     = :ios, "8.0"
 
-  s.source       = { :git => "https://github.com/dreamCC/CJQRCode.git", :tag => s.version" }
+  s.source       = { :git => "https://github.com/dreamCC/CJQRCode.git", :tag => s.version }
 
   s.source_files  = "CJQRCode", "CJQRCode/*.{h,m}"
 
