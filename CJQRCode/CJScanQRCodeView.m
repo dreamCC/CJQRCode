@@ -7,9 +7,6 @@
 //
 
 #import "CJScanQRCodeView.h"
-#import "CALayer+CJAnimation.h"
-#import "UIView+CJCategory.h"
-#import "UIButton+CJCategory.h"
 #import <AVFoundation/AVFoundation.h>
 
 @interface CJScanQRCodeView ()
@@ -230,11 +227,11 @@
 }
 
 -(void)stopAnimation {
-    [_scanImageLayer cj_pauseAnimation];
+    [self stopAnimationWithLayer:_scanImageLayer];
 }
 
 -(void)continueAnimation {
-    [_scanImageLayer cj_continueAnimation];
+    [self continueAnimationWithLayer:_scanImageLayer];
 }
 
 #pragma mark ---  private method
@@ -287,6 +284,27 @@
     }
 }
 
+-(void)stopAnimationWithLayer:(CALayer *)layer {
+    if (layer.speed == 0) {
+        return;
+    }
+    CFTimeInterval pauseTime = [layer convertTime:CACurrentMediaTime() fromLayer:nil];
+    layer.speed      = 0.f;
+    layer.timeOffset = pauseTime;
+}
+
+-(void)continueAnimationWithLayer:(CALayer *)layer {
+    if (layer.speed != 0) return;
+    CFTimeInterval  pauseTime = layer.timeOffset;
+    
+    layer.speed      = 1.0f;
+    layer.timeOffset = 0.f;
+    layer.beginTime  = 0.f; //表示持续时间内的，开始时间
+    
+    CFTimeInterval sinceTime = [layer convertTime:CACurrentMediaTime() fromLayer:nil] - pauseTime;
+    layer.beginTime  = sinceTime;
+}
+
 #pragma mark --- setter
 -(void)setScanStyle:(CJScanQRCodeViewScanStyle)scanStyle {
     _scanStyle = scanStyle;
@@ -324,7 +342,8 @@
         torchButton.titleLabel.font = [UIFont systemFontOfSize:12];
         torchButton.frame      = CGRectMake((self.frame.size.width - 60)*0.5, scanArea_y + _scanAreaWidth - 70, 60, 70);
         torchButton.selected   = NO;
-        [torchButton cj_changeImagePosition:CJImagePositionTop];
+        [torchButton setImageEdgeInsets:UIEdgeInsetsMake(-torchButton.titleLabel.intrinsicContentSize.height, 0, 0, -torchButton.titleLabel.intrinsicContentSize.width)];
+        [torchButton setTitleEdgeInsets:UIEdgeInsetsMake(torchButton.currentImage.size.height, -torchButton.currentImage.size.width, 0, 0)];
         [torchButton addTarget:self action:@selector(torchButtonClick:) forControlEvents:UIControlEventTouchUpInside];
         [torchButton setHidden:YES];
         _torchButton = torchButton;
