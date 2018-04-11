@@ -2,7 +2,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "CJQRCode"
-  s.version      = "1.0.1"
+  s.version      = "1.0.2"
   s.summary      = "Qr code tools."
 
   s.description  = "Utility class projects related to qr code"
