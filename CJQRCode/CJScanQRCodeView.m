@@ -119,7 +119,8 @@
     [selfPath appendPath:scanAreaPath];
     [self.scanAreaLayer setPath:selfPath.CGPath];
     [self.scanAreaLayer setFillColor:self.backgroundColor.CGColor];
-    
+    [self.scanAreaLayer setStrokeColor:_scanAreaBorderColor.CGColor];
+    [self.scanAreaLayer setLineWidth:_scanAreaBorderWidth];
     
     // 左上角
     CGPoint cornerPoint, firstPoint, lastPoint;
