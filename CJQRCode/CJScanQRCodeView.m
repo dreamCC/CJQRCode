@@ -15,6 +15,15 @@
 @property(nonatomic, strong, readwrite) UIButton *torchButton;
 @property(nonatomic, assign, readwrite) CGRect scanAreaRect;
 
+// 扫描整体显示
+@property(nonatomic, weak) CAShapeLayer *scanAreaLayer;
+// 四个拐角
+@property(nonatomic, weak) CAShapeLayer *cornerShapeLayer;
+// 扫描线
+@property(nonatomic, weak) CALayer *imageContentLayer;
+// 扫面动画
+@property(nonatomic, weak) CABasicAnimation *scanAnimation;
+
 
 @end
 
@@ -24,34 +33,93 @@
     self = [super initWithFrame:frame];
     if (!self) return nil;
     [self setupScanQRCodeView];
-
+    
+    [self setupContentView];
     return self;
 }
 
--(void)drawRect:(CGRect)rect {
-    [super drawRect:rect];
-   
-    [self.layer.sublayers makeObjectsPerformSelector:@selector(removeFromSuperlayer)];
+
+-(void)stopAnimation {
+    [self stopAnimationWithLayer:_scanImageLayer];
+}
+
+-(void)continueAnimation {
+    [self continueAnimationWithLayer:_scanImageLayer];
+}
+
+-(void)layoutSubviews {
+    [super layoutSubviews];
+    
+    [self updateContentViewPosition];
+}
+
+#pragma mark ---  private method
+-(void)setupScanQRCodeView {
+    
+    self.backgroundColor = [UIColor colorWithWhite:0.4 alpha:0.2];
+    _scanAreaWidth       = CGRectGetWidth(self.frame) - 50 *2;
+    _scanAreaBorderColor = [UIColor whiteColor];
+    _scanAreaBorderWidth = 0.5f;
+    _scanAreaCornerColor = [UIColor colorWithRed:85/255.0f green:183/255.0 blue:55/255.0 alpha:1.0];
+    _scanAreaCornerWidth = 20.f;
+    _cornerPosition      = CJScanQRCodeViewCornerPositionInside;
+    _scanStyle           = CJScanQRCodeViewStyleScanLine;
+    _scanAreaCornerBorderWidth = 4.f;
+}
+
+-(void)setupContentView {
+
+    CAShapeLayer *scanAreaLayer = [CAShapeLayer layer];
+    [scanAreaLayer setFillRule:kCAFillRuleEvenOdd];
+    [self.layer addSublayer:scanAreaLayer];
+    _scanAreaLayer = scanAreaLayer;
+    
+
+    
+    // 设置扫描区域边界样式
+    [scanAreaLayer setStrokeColor:_scanAreaBorderColor.CGColor];
+    [scanAreaLayer setLineWidth:_scanAreaBorderWidth];
+    
+    // 四个拐角
+    CAShapeLayer *cornerShapeLayer = [CAShapeLayer layer];
+    cornerShapeLayer.lineCap     = kCALineCapRound;
+    cornerShapeLayer.fillColor   = [UIColor clearColor].CGColor;
+    [self.layer addSublayer:cornerShapeLayer];
+    _cornerShapeLayer = cornerShapeLayer;
+    
+    
+    // 扫描线
+    CALayer *imageContentLayer = [CALayer layer];
+    imageContentLayer.backgroundColor = [UIColor clearColor].CGColor;
+    imageContentLayer.masksToBounds   = YES;
+    [self.layer addSublayer:imageContentLayer];
+    _imageContentLayer = imageContentLayer;
+
+    
+
+    CALayer *scanImageLayer = [CALayer layer];
+    scanImageLayer.contentsGravity =  kCAGravityResizeAspect;
+    [imageContentLayer addSublayer:scanImageLayer];
+    _scanImageLayer    = scanImageLayer;
+    
+    // 手电筒
+    [self addSubview:self.torchButton];
+
+}
+
+
+-(void)updateContentViewPosition {
     
     CGFloat scanArea_x = (CGRectGetWidth(self.frame) - _scanAreaWidth) * 0.5;
     CGFloat scanArea_y = (CGRectGetHeight(self.frame) - _scanAreaWidth -  100) * 0.5;
     _scanAreaRect      = CGRectMake(scanArea_x, scanArea_y, _scanAreaWidth, _scanAreaWidth);
     
-    CAShapeLayer *scanAreaLayer = [CAShapeLayer layer];
-    [self.layer addSublayer:scanAreaLayer];
-    
-    
     UIBezierPath *selfPath     = [UIBezierPath bezierPathWithRect:self.bounds];
     UIBezierPath *scanAreaPath = [UIBezierPath bezierPathWithRect:_scanAreaRect];
     [selfPath appendPath:scanAreaPath];
-    [scanAreaLayer setPath:selfPath.CGPath];
-    [scanAreaLayer setFillRule:kCAFillRuleEvenOdd];
-    [scanAreaLayer setFillColor:self.backgroundColor.CGColor];
+    [self.scanAreaLayer setPath:selfPath.CGPath];
+    [self.scanAreaLayer setFillColor:self.backgroundColor.CGColor];
     
-    // 设置扫描区域边界样式
-    [scanAreaPath setLineWidth:_scanAreaBorderWidth];
-    [_scanAreaBorderColor set];
-    [scanAreaPath stroke];
     
     // 左上角
     CGPoint cornerPoint, firstPoint, lastPoint;
@@ -84,7 +152,7 @@
     [left_top_path moveToPoint:firstPoint];
     [left_top_path addLineToPoint:cornerPoint];
     [left_top_path addLineToPoint:lastPoint];
-   
+    
     
     // 左下角
     UIBezierPath *left_bottom_path = [UIBezierPath bezierPath];
@@ -184,18 +252,11 @@
     [left_top_path appendPath:right_bottom_path];
     
     // 四个角统一设置样式
-    [_scanAreaCornerColor set];
-    [left_top_path setLineCapStyle:kCGLineCapRound];
-    [left_top_path setLineWidth:_scanAreaCornerBorderWidth];
-    [left_top_path stroke];
+    self.cornerShapeLayer.path = left_top_path.CGPath;
+    self.cornerShapeLayer.lineWidth   = _scanAreaCornerBorderWidth;
+    self.cornerShapeLayer.strokeColor = _scanAreaCornerColor.CGColor;
     
-    
-    // 扫描线
-    CALayer *imageContentLayer = [CALayer layer];
-    imageContentLayer.frame    = CGRectMake(scanArea_x, scanArea_y, _scanAreaWidth, _scanAreaWidth);
-    imageContentLayer.backgroundColor = [UIColor clearColor].CGColor;
-    imageContentLayer.masksToBounds   = YES;
-    [self.layer addSublayer:imageContentLayer];
+    self.imageContentLayer.frame = CGRectMake(scanArea_x, scanArea_y, _scanAreaWidth, _scanAreaWidth);
     
     NSString *scanImagePath;
     if (_scanStyle == CJScanQRCodeViewStyleScanLine) {
@@ -204,48 +265,16 @@
         scanImagePath = [[NSBundle mainBundle].resourcePath stringByAppendingPathComponent:@"CJQRCode.bundle/QRCodeScanningLineGrid.png"];
     }
     UIImage *scanImage  = [UIImage imageWithContentsOfFile:scanImagePath];
-    
-    CALayer *scanImageLayer = [CALayer layer];
-    scanImageLayer.frame    = CGRectMake(0, - _scanAreaWidth, _scanAreaWidth, _scanAreaWidth);
-    scanImageLayer.contents = (__bridge id _Nullable)(scanImage.CGImage);
-    scanImageLayer.contentsGravity =  kCAGravityResizeAspect;
-    [imageContentLayer addSublayer:scanImageLayer];
-    _scanImageLayer    = scanImageLayer;
-    
+    self.scanImageLayer.contents = (__bridge id _Nullable)(scanImage.CGImage);
+    self.scanImageLayer.frame    = CGRectMake(0, - _scanAreaWidth, _scanAreaWidth, _scanAreaWidth);
+
     // 扫描线动画
     CABasicAnimation *scanAnimation = [CABasicAnimation animationWithKeyPath:@"position.y"];
     scanAnimation.toValue  = @(_scanAreaWidth);
     scanAnimation.duration = 3.0f;
     scanAnimation.repeatCount    = HUGE;
     scanAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-    [scanImageLayer addAnimation:scanAnimation forKey:@"com.scanAnimation.cn"];
-    
-    // 手电筒
-    [self addSubview:self.torchButton];
-
-  
-}
-
--(void)stopAnimation {
-    [self stopAnimationWithLayer:_scanImageLayer];
-}
-
--(void)continueAnimation {
-    [self continueAnimationWithLayer:_scanImageLayer];
-}
-
-#pragma mark ---  private method
--(void)setupScanQRCodeView {
-    
-    self.backgroundColor = [UIColor colorWithWhite:0.4 alpha:0.2];
-    _scanAreaWidth       = CGRectGetWidth(self.frame) - 50 *2;
-    _scanAreaBorderColor = [UIColor whiteColor];
-    _scanAreaBorderWidth = 0.5f;
-    _scanAreaCornerColor = [UIColor colorWithRed:85/255.0f green:183/255.0 blue:55/255.0 alpha:1.0];
-    _scanAreaCornerWidth = 20.f;
-    _cornerPosition      = CJScanQRCodeViewCornerPositionInside;
-    _scanStyle           = CJScanQRCodeViewStyleScanLine;
-    _scanAreaCornerBorderWidth = 4.f;
+    [self.scanImageLayer addAnimation:scanAnimation forKey:@"com.scanAnimation.cn"];
 }
 
 -(void)torchButtonClick:(UIButton *)torchButton {
@@ -319,12 +348,10 @@
         default:
             break;
     }
-    [self setNeedsDisplay];
 }
 
 -(void)setScanAreaWidth:(CGFloat)scanAreaWidth {
     _scanAreaWidth = scanAreaWidth;
-    [self setNeedsDisplay];
 }
 
 -(UIButton *)torchButton {
