@@ -8,102 +8,7 @@
 
 #import "CJDetectorAlbumQRCodeManager.h"
 #import "CJPlaySoundTool.h"
-
-@class CJProgressHud;
-static CJProgressHud *_hud = nil;
-@interface CJProgressHud : UIView
-
-+(void)showHudWithText:(NSString *)text;
-
-+(void)hiddenHud;
-@end
-
-@implementation CJProgressHud
-
-+(void)showHudWithText:(NSString *)text {
-    CJProgressHud *hud = [[CJProgressHud alloc] init];
-    hud.translatesAutoresizingMaskIntoConstraints = NO;
-    [[UIApplication sharedApplication].keyWindow addSubview:hud];
-    NSLayoutConstraint *centerX = [NSLayoutConstraint constraintWithItem:hud
-                                                               attribute:NSLayoutAttributeCenterX
-                                                               relatedBy:NSLayoutRelationEqual
-                                                                  toItem:hud.superview
-                                                               attribute:NSLayoutAttributeCenterX multiplier:1.0f constant:0];
-    NSLayoutConstraint *centerY = [NSLayoutConstraint constraintWithItem:hud
-                                                               attribute:NSLayoutAttributeCenterY
-                                                               relatedBy:NSLayoutRelationEqual
-                                                                  toItem:hud.superview
-                                                               attribute:NSLayoutAttributeCenterY
-                                                              multiplier:1.0f constant:0];
-    [hud.superview addConstraints:@[centerX,centerY]];
-    
-    NSLayoutConstraint *height = [NSLayoutConstraint constraintWithItem:hud
-                                                              attribute:NSLayoutAttributeHeight
-                                                              relatedBy:NSLayoutRelationEqual
-                                                                 toItem:nil
-                                                              attribute:0
-                                                             multiplier:1.0f constant:40];
-    NSLayoutConstraint *weight = [NSLayoutConstraint constraintWithItem:hud
-                                                              attribute:NSLayoutAttributeWidth
-                                                              relatedBy:NSLayoutRelationEqual
-                                                                 toItem:nil
-                                                              attribute:0 multiplier:1.0f constant:100];
-    [hud addConstraints:@[height,weight]];
-    
-    UIActivityIndicatorView *activity = [[UIActivityIndicatorView alloc] init];
-    activity.translatesAutoresizingMaskIntoConstraints = NO;
-    [hud addSubview:activity];
-    [activity startAnimating];
-    
-    NSLayoutConstraint *activity_X = [NSLayoutConstraint constraintWithItem:activity
-                                                                  attribute:NSLayoutAttributeLeft
-                                                                  relatedBy:NSLayoutRelationEqual
-                                                                     toItem:hud
-                                                                  attribute:NSLayoutAttributeLeft
-                                                                 multiplier:1.0f constant:10];
-    NSLayoutConstraint *activityCenterY = [NSLayoutConstraint constraintWithItem:activity
-                                                                       attribute:NSLayoutAttributeCenterY
-                                                                       relatedBy:NSLayoutRelationEqual
-                                                                          toItem:hud
-                                                                       attribute:NSLayoutAttributeCenterY
-                                                                      multiplier:1.0f constant:0];
-    [hud addConstraints:@[activity_X,activityCenterY]];
-    
-    UILabel *titleLab = [UILabel new];
-    titleLab.font = [UIFont systemFontOfSize:13];
-    titleLab.textColor = [UIColor lightGrayColor];
-    titleLab.text = text;
-    titleLab.translatesAutoresizingMaskIntoConstraints = NO;
-    [hud addSubview:titleLab];
-    
-    NSLayoutConstraint *titleLab_x = [NSLayoutConstraint constraintWithItem:titleLab
-                                                                  attribute:NSLayoutAttributeLeft
-                                                                  relatedBy:NSLayoutRelationEqual
-                                                                     toItem:activity
-                                                                  attribute:NSLayoutAttributeRight
-                                                                 multiplier:1.0f constant:10];
-    NSLayoutConstraint *titleLab_centerY = [NSLayoutConstraint constraintWithItem:titleLab
-                                                                        attribute:NSLayoutAttributeCenterY
-                                                                        relatedBy:NSLayoutRelationEqual
-                                                                           toItem:activity
-                                                                        attribute:NSLayoutAttributeCenterY
-                                                                       multiplier:1.0f constant:0];
-    [hud addConstraints:@[titleLab_x,titleLab_centerY]];
-    
-    _hud = hud;
-    
-}
-
-+(void)hiddenHud {
-    [UIView animateWithDuration:0.5 animations:^{
-        _hud.alpha = 0.f;
-    } completion:^(BOOL finished) {
-        [_hud removeFromSuperview];
-        _hud = nil;
-    }];
-}
-
-@end
+#import "CJProgressHUD.h"
 
 @interface CJDetectorAlbumQRCodeManager ()<UIImagePickerControllerDelegate,UINavigationControllerDelegate>
 
@@ -189,13 +94,13 @@ static CJProgressHud *_hud = nil;
     // 选中的图片
     UIImage *selectImage = [info objectForKey:UIImagePickerControllerOriginalImage];
     
-    [CJProgressHud showHudWithText:@"识别中"];
+    [CJProgressHUD showNotice:@"识别中"];
     // 创建二维码识别对象
     CIDetector *detector = [CIDetector detectorOfType:CIDetectorTypeQRCode context:nil options:@{CIDetectorAccuracy:CIDetectorAccuracyHigh}];
     
     NSArray<CIFeature *> *featuresResult = [detector featuresInImage:[CIImage imageWithCGImage:selectImage.CGImage]];
     if (featuresResult.count == 0) {
-        [CJProgressHud hiddenHud];
+        [CJProgressHUD hiddenNotice];
        
         [self showAlterViewSureActionClick:^{
             if ([self.delegate respondsToSelector:@selector(detectorAlbumQRCodeFailureAlertActionClick)]) {
@@ -214,7 +119,7 @@ static CJProgressHud *_hud = nil;
             NSString *resultString       = codeFeature.messageString;
             [self.resultMAry addObject:resultString];
         }
-        [CJProgressHud hiddenHud];
+        [CJProgressHUD hiddenNotice];
         [CJPlaySoundTool playSystemSound];
         if ([self.delegate respondsToSelector:@selector(detectorAlbumQRCodeSuccess:)]) {
             [self.delegate detectorAlbumQRCodeSuccess:self.resultMAry];

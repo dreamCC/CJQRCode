@@ -10,12 +10,10 @@
 #import "CJPlaySoundTool.h"
 
 @interface CJScanQRCodeManager ()<AVCaptureMetadataOutputObjectsDelegate,AVCaptureVideoDataOutputSampleBufferDelegate>
-{
-    AVCaptureSession *_session;
-}
 
-@property (nonatomic, assign, readwrite) AVAuthorizationStatus status;
+@property(nonatomic, strong) AVCaptureSession *session;
 
+@property(nonatomic, strong) CJScanQRCodeView *scanView;
 
 @end
 
@@ -29,10 +27,33 @@
 -(instancetype)init {
     self = [super init];
     if (self) {
-        // 设备授权状态
-        [self captureDeviceAuthorStatus];
+       
     }
     return self;
+}
+
++(CJAuthorizationStatus)cameraAuthorizeStatus {
+    
+    AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    switch (status) {
+        case AVAuthorizationStatusDenied:
+        case AVAuthorizationStatusRestricted:
+            return CJAuthorizationStatusDenied;
+        case AVAuthorizationStatusNotDetermined:
+            return CJAuthorizationStatusNotDetermined;
+        case AVAuthorizationStatusAuthorized:
+            return CJAuthorizationStatusAuthorized;
+        default:
+            break;
+    }
+    return CJAuthorizationStatusNotDetermined;
+}
+
++(void)requestCameraAuthorizeStatus:(void (^)(CJAuthorizationStatus))completionHandle {
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
+        CJAuthorizationStatus status = granted?CJAuthorizationStatusAuthorized:CJAuthorizationStatusDenied;
+        completionHandle(status);
+    }];
 }
 
 -(void)setupScanQRCodeManagerWithSessionPreset:(NSString *)sessionPreset
@@ -40,15 +61,9 @@
                                    previewView:(UIView *)view
                                       scanView:(CJScanQRCodeView *)scanView
                                       delegate:(id<CJScanQRCodeManagerDelegate>)delegate {
-  
     
     if (!view) {
         @throw [NSException exceptionWithName:@"show in view" reason:@"you must give a view to show" userInfo:nil];
-    }
-    
-    if (self.status != AVAuthorizationStatusAuthorized) {
-        NSLog(@"无相机访问权限");
-        return;
     }
     
     _scanView     = scanView;
@@ -111,13 +126,11 @@
    
     // 设置扫描范围
     dispatch_async(dispatch_get_main_queue(), ^{
-        CGRect convertRect = [_scanView convertRect:_scanView.scanAreaRect toView:view];
+        CGRect convertRect = [self.scanView convertRect:self.scanView.scanAreaRect toView:view];
         metaDataOutput.rectOfInterest = [priviewLayer metadataOutputRectOfInterestForRect:convertRect];
     });
   
- 
 }
-
 
 
 -(void)startScan {
@@ -163,40 +176,6 @@
     device.videoZoomFactor  = scale;
     [device unlockForConfiguration];
 }
-
-#pragma mark -- private methode
-
--(AVAuthorizationStatus)captureDeviceAuthorStatus {
-    AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-    switch (status) {
-        case AVAuthorizationStatusDenied:
-        case AVAuthorizationStatusRestricted:
-        {
-            NSLog(@"摄像头权限受限制，请到设置->隐私->相机里面打开授权");
-        }
-            break;
-        case AVAuthorizationStatusNotDetermined:
-        {
-            // 获取授权
-            [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
-                if (!granted) {
-                    NSLog(@"你当前选择的是不允许");
-                    self.status = AVAuthorizationStatusDenied;
-                }else {
-                    self.status = AVAuthorizationStatusAuthorized;
-                }
-            }];
-        }
-            break;
-        case AVAuthorizationStatusAuthorized:
-            break;
-        default:
-            break;
-    }
-    self.status = status;
-    return status;
-}
-
 #pragma mark --- AVCaptureMetadataOutputObjectsDelegate
 -(void)captureOutput:(AVCaptureOutput *)output didOutputMetadataObjects:(NSArray<__kindof AVMetadataObject *> *)metadataObjects fromConnection:(AVCaptureConnection *)connection {
    

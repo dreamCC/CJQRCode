@@ -2,7 +2,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "CJQRCode"
-  s.version      = "1.0.4"
+  s.version      = "1.0.5"
   s.summary      = "Qr code tools."
 
   s.description  = "Utility class projects related to qr code"
@@ -14,6 +14,11 @@ Pod::Spec.new do |s|
 
   s.source       = { :git => "https://github.com/dreamCC/CJQRCode.git", :tag => s.version }
 
-  s.source_files  = "CJQRCode"
+  s.source_files  = "CJQRCode/*.{h,m}"
+
+  s.resources = "CJQRCode/CJQRCode.bundle"
+
+
+  s.requires_arc = true
 
 end

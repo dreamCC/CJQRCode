@@ -18,14 +18,17 @@
 
 @end
 
+typedef NS_ENUM(NSUInteger, CJAuthorizationStatus) {
+    CJAuthorizationStatusAuthorized,
+    CJAuthorizationStatusDenied,
+    CJAuthorizationStatusNotDetermined
+};
+
 @interface CJScanQRCodeManager : NSObject
+
 
 @property(nonatomic, weak) id<CJScanQRCodeManagerDelegate> delegate;
 
-@property(nonatomic, assign, readonly) AVAuthorizationStatus status;
-
-
-@property(nonatomic, strong) CJScanQRCodeView *scanView;
 /**
  初始化方法
 
@@ -33,6 +36,22 @@
  */
 +(instancetype)defaultManager;
 
+
+/**
+ 摄像头的授权状态
+
+ @return  授权状态
+ */
++(CJAuthorizationStatus)cameraAuthorizeStatus;
+
+
+/**
+ 请求摄像头授权，一般配合+cameraAuthorizeStatus使用。当授权状态CJAuthorizationStatusNotDetermined
+ 调用改方法重新获取授权。如果用户已经禁止访问，那么下面这个方法是不能弹出提示框的。
+
+ @param completionHandle 授权完成后回调
+ */
++(void)requestCameraAuthorizeStatus:(void(^)(CJAuthorizationStatus status))completionHandle;
 
 /**
  设置扫描二维码工具
