@@ -18,10 +18,10 @@
 
 @end
 
-typedef NS_ENUM(NSUInteger, CJAuthorizationStatus) {
-    CJAuthorizationStatusAuthorized,
-    CJAuthorizationStatusDenied,
-    CJAuthorizationStatusNotDetermined
+typedef NS_ENUM(NSUInteger, CJCameraAuthorizationStatus) {
+    CJCameraAuthorizationStatusAuthorized,
+    CJCameraAuthorizationStatusDenied,
+    CJCameraAuthorizationStatusNotDetermined
 };
 
 @interface CJScanQRCodeManager : NSObject
@@ -42,7 +42,7 @@ typedef NS_ENUM(NSUInteger, CJAuthorizationStatus) {
 
  @return  授权状态
  */
-+(CJAuthorizationStatus)cameraAuthorizeStatus;
++(CJCameraAuthorizationStatus)cameraAuthorizeStatus;
 
 
 /**
@@ -51,7 +51,7 @@ typedef NS_ENUM(NSUInteger, CJAuthorizationStatus) {
 
  @param completionHandle 授权完成后回调
  */
-+(void)requestCameraAuthorizeStatus:(void(^)(CJAuthorizationStatus status))completionHandle;
++(void)requestCameraAuthorizeStatus:(void(^)(CJCameraAuthorizationStatus status))completionHandle;
 
 /**
  设置扫描二维码工具

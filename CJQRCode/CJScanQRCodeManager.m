@@ -32,26 +32,26 @@
     return self;
 }
 
-+(CJAuthorizationStatus)cameraAuthorizeStatus {
++(CJCameraAuthorizationStatus)cameraAuthorizeStatus {
     
     AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
     switch (status) {
         case AVAuthorizationStatusDenied:
         case AVAuthorizationStatusRestricted:
-            return CJAuthorizationStatusDenied;
+            return CJCameraAuthorizationStatusDenied;
         case AVAuthorizationStatusNotDetermined:
-            return CJAuthorizationStatusNotDetermined;
+            return CJCameraAuthorizationStatusNotDetermined;
         case AVAuthorizationStatusAuthorized:
-            return CJAuthorizationStatusAuthorized;
+            return CJCameraAuthorizationStatusAuthorized;
         default:
             break;
     }
-    return CJAuthorizationStatusNotDetermined;
+    return CJCameraAuthorizationStatusNotDetermined;
 }
 
-+(void)requestCameraAuthorizeStatus:(void (^)(CJAuthorizationStatus))completionHandle {
++(void)requestCameraAuthorizeStatus:(void (^)(CJCameraAuthorizationStatus))completionHandle {
     [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
-        CJAuthorizationStatus status = granted?CJAuthorizationStatusAuthorized:CJAuthorizationStatusDenied;
+        CJCameraAuthorizationStatus status = granted?CJCameraAuthorizationStatusAuthorized:CJCameraAuthorizationStatusDenied;
         completionHandle(status);
     }];
 }
